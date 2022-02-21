@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DBCommand": {
+      "commandName": "Project",
+      "commandLineArgs": "-s demo.sql -p tms"
+    }
+  }
+}
