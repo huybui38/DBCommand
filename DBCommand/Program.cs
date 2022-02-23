@@ -23,7 +23,7 @@ namespace DBCommandConsole
         }
         class Options
         {
-            [Option('s', "sql", Required = true, HelpText = "Input SQL file to be processed.")]
+            [Option('s', "sql", HelpText = "Input SQL file to be processed.")]
             public IEnumerable<string> InputSqlFiles { get; set; }
 
             [Option(
@@ -54,6 +54,11 @@ namespace DBCommandConsole
         }
         static void RunOptions(Options opts)
         {
+            if (opts.InputSqlFiles.Count() == 0 && opts.Command == null)
+            {
+                logMessage("command or sql file is missing");
+                return;
+            }
             bool isExcluded = opts.ExcludedDatabases.Any();
             var dbCommand = new DBCommand(logSqlMessage);
             var list = dbCommand.GetAllDatabaseNames();
@@ -69,16 +74,28 @@ namespace DBCommandConsole
             filtered.ForEach(a => logMessage(a));
             try
             {
-                var inputSqlFiles = opts.InputSqlFiles.ToList();
-                for (int i = 0; i < inputSqlFiles.Count; i++)
+                if (opts.InputSqlFiles.Count() != 0)
                 {
-                    string sqlText = File.ReadAllText(inputSqlFiles[i]);
-                    foreach (var dbName in filtered)
+                    var inputSqlFiles = opts.InputSqlFiles.ToList();
+                    for (int i = 0; i < inputSqlFiles.Count; i++)
                     {
-                        logMessage($"Running {inputSqlFiles[i]} ", dbName);
-                        RunCommand(sqlText, dbName, dbCommand);
+                        string sqlText = File.ReadAllText(inputSqlFiles[i]);
+                        foreach (var dbName in filtered)
+                        {
+                            logMessage($"Running {inputSqlFiles[i]} ", dbName);
+                            RunCommand(sqlText, dbName, dbCommand);
+                        }
                     }
                 }
+                if (opts.Command != null)
+                {
+                    foreach (var dbName in filtered)
+                    {
+                        logMessage($"Running command", dbName);
+                        RunCommand(opts.Command, dbName, dbCommand);
+                    }
+                }
+                
             }
             catch (Exception ex)
             {
