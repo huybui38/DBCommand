@@ -69,8 +69,12 @@ namespace DBCommandConsole
             }
             var filtered = list.Where(a => a.StartsWith(opts.Prefix)).ToList()
                 .Except(opts.ExcludedDatabases).ToList();
+            if (filtered.Count() == 0) {
+                logMessage("Empty database list!");
+                return;
+            }
             logMessage("Database List:");
-            if (filtered.Count() == 0) return;
+
             filtered.ForEach(a => logMessage(a));
             try
             {
