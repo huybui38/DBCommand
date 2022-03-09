@@ -30,7 +30,7 @@ namespace DBCommandConsole
                 'p', "prefix",
               Required = true,
               HelpText = "Input prefix database to be processed.")]
-            public string Prefix { get; set; }
+            public IEnumerable<string> Prefix { get; set; }
 
             [Option(
                 'c', "command",
@@ -56,7 +56,12 @@ namespace DBCommandConsole
         {
             if (opts.InputSqlFiles.Count() == 0 && opts.Command == null)
             {
-                logMessage("command or sql file is missing");
+                logMessage("command or sql file is missing!");
+                return;
+            }
+            if (opts.Prefix.Count() == 0)
+            {
+                logMessage("Prefix is missing!");
                 return;
             }
             bool isExcluded = opts.ExcludedDatabases.Any();
@@ -67,15 +72,20 @@ namespace DBCommandConsole
                 logMessage("Không thể đọc dữ liệu!");
                 return;
             }
-            var filtered = list.Where(a => a.StartsWith(opts.Prefix)).ToList()
-                .Except(opts.ExcludedDatabases).ToList();
-            if (filtered.Count() == 0) {
+            var filteredResult = new List<string>();
+            foreach (var prefix in opts.Prefix)
+            {
+                var filtered = list.Where(a => a.StartsWith(prefix)).ToList()
+                                    .Except(opts.ExcludedDatabases).ToList();
+                filteredResult.AddRange(filtered);
+            }
+            filteredResult = filteredResult.Distinct().ToList();
+            if (filteredResult.Count() == 0) {
                 logMessage("Empty database list!");
                 return;
             }
             logMessage("Database List:");
-
-            filtered.ForEach(a => logMessage(a));
+            filteredResult.ForEach(a => logMessage(a));
             try
             {
                 if (opts.InputSqlFiles.Count() != 0)
@@ -84,7 +94,7 @@ namespace DBCommandConsole
                     for (int i = 0; i < inputSqlFiles.Count; i++)
                     {
                         string sqlText = File.ReadAllText(inputSqlFiles[i]);
-                        foreach (var dbName in filtered)
+                        foreach (var dbName in filteredResult)
                         {
                             logMessage($"Running {inputSqlFiles[i]} ", dbName);
                             RunCommand(sqlText, dbName, dbCommand);
@@ -93,7 +103,7 @@ namespace DBCommandConsole
                 }
                 if (opts.Command != null)
                 {
-                    foreach (var dbName in filtered)
+                    foreach (var dbName in filteredResult)
                     {
                         logMessage($"Running command", dbName);
                         RunCommand(opts.Command, dbName, dbCommand);
